@@ -1,0 +1,35 @@
+name: Terragrunt Apply
+
+description: Creates infra defined by Terragrunt
+
+inputs:
+  aws-role:
+    description: AWS Role to assume
+    required: true
+
+  aws-account:
+    description: AWS Account type (nonprod / prod)
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Terragrunt
+      uses: autero1/action-terragrunt@v1.1.0
+      with:
+        terragrunt_version: 0.45.2
+
+    - name: Configure AWS CLI
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: ${{ inputs.aws-role }}
+        aws-region: af-south-1
+
+    - name: Terragrunt Apply
+      shell: bash
+      run: |
+        cd ${{ inputs.aws-account }}
+        terragrunt run-all apply --terragrunt-non-interactive

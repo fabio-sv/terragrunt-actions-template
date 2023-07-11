@@ -1,0 +1,30 @@
+name: Terragrunt Apply
+
+on:
+  push:
+    branches: main
+
+jobs:
+  plan:
+    name: Apply
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: '[Non Prod] Terragrunt Apply'
+        uses: ./.github/actions/terragrunt-apply
+        with:
+          aws-role: ${{ secrets.AWS_NONPROD_ROLE }}
+          aws-account: nonprod
+
+      - name: '[Prod] Terragrunt Apply'
+        environment: prod
+        uses: ./.github/actions/terragrunt-apply.yml
+        with:
+          aws-role: ${{ secrets.AWS_PROD_ROLE }}
+          aws-account: prod

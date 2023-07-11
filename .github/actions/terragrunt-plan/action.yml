@@ -1,0 +1,62 @@
+name: Terragrunt Plan
+
+description: Plans infra defined by Terragrunt
+
+inputs:
+  aws-role:
+    description: AWS Role to assume
+    required: true
+
+  aws-account:
+    description: AWS Account type (nonprod / prod)
+    required: true
+
+  github-token:
+    description: Token with credentials to write to PR
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Terragrunt
+      uses: autero1/action-terragrunt@v1.1.0
+      with:
+        terragrunt_version: 0.45.2
+
+    - name: Configure AWS CLI
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: ${{ inputs.aws-role }}
+        aws-region: af-south-1
+
+    - name: Terragrunt Plan
+      id: plan
+      shell: bash
+      run: |
+        cd ${{ inputs.aws-account }}
+        terragrunt run-all plan --terragrunt-non-interactive
+      continue-on-error: true
+
+    - name: Update Pull Request
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const output = `#### \`[${{ inputs.aws-account }}]\` Terragrunt Plan 📖\`${{ steps.plan.outcome }}\`
+
+          *Pushed by: @${{ github.actor }}*`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Terragrunt Plan Status
+      if: steps.plan.outcome == 'failure'
+      shell: bash
+      run: exit 1

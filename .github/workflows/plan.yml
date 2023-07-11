@@ -1,0 +1,32 @@
+name: Terragrunt Plan
+
+on:
+  pull_request:
+    branches: main
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: '[Non Prod] Terragrunt Plan'
+        uses: ./.github/actions/terragrunt-plan
+        with:
+          aws-role: ${{ secrets.AWS_NONPROD_ROLE }}
+          aws-account: nonprod
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: '[Prod] Terragrunt Plan'
+        environment: prod
+        uses: ./.github/actions/terragrunt-plan.yml
+        with:
+          aws-role: ${{ secrets.AWS_PROD_ROLE }}
+          aws-account: prod
